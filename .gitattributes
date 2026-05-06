@@ -1,2 +1,12 @@
-# Auto detect text files and perform LF normalization
-* text=auto
+# GitHub Linguist to ignore Unity asset files in the language stats
+*.mat linguist-generated=true
+*.prefab linguist-generated=true
+*.unity linguist-generated=true
+*.asset linguist-generated=true
+*.controller linguist-generated=true
+*.anim linguist-generated=true
+*.physicMaterial linguist-generated=true
+
+# Specifically ignore ShaderLab files from the language bar
+*.shader linguist-detectable=false
+*.cginc linguist-detectable=false
