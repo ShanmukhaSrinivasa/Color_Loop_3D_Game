@@ -12,6 +12,13 @@ public class Bullet : MonoBehaviour
         targetCube = target;
         bulletColor = color;
         GetComponent<Renderer>().material = bulletColor;
+
+        TrailRenderer trail = GetComponent<TrailRenderer>();
+        if(trail != null)
+        {
+            trail.startColor = bulletColor.color;
+            trail.endColor = new Color(bulletColor.color.r, bulletColor.color.g, bulletColor.color.b, 0f);
+        }
     }
 
 
@@ -30,8 +37,17 @@ public class Bullet : MonoBehaviour
 
         if(Vector3.Distance(transform.position, targetCube.position) < 0.1f)
         {
-            // Destory the cube and the bullet
-            Destroy(targetCube.gameObject);
+            CubeBehaviour cubeScript = targetCube.GetComponent<CubeBehaviour>();
+
+            if(cubeScript != null)
+            {
+                cubeScript.ExplodAndDie();
+            }
+            else
+            {
+                Destroy(targetCube.gameObject);
+            }
+
             Destroy(gameObject);
         }
 

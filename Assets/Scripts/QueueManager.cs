@@ -19,10 +19,11 @@ public class QueueManager : MonoBehaviour
     [Header("System Reference")]
     [SerializeField] List<Transform> mainLoopNodes;
     public GridManager gridManager;
+    public UIManager uiManager;
 
     private Queue<CharacterController>[] queues;
 
-    void Start()
+    void Awake()
     {
         // initialize the 3 queues
         queues = new Queue<CharacterController>[3];
@@ -30,6 +31,44 @@ public class QueueManager : MonoBehaviour
         for(int i=0; i<3; i++)
         {
             queues[i] = new Queue<CharacterController>();
+        }
+    }
+
+    public void ResetAndGenerateQueue()
+    {
+        foreach(var cc in activeInLoop)
+        {
+            if(cc != null)
+            {
+                cc.isRunningLoop = false;
+                Destroy(cc.gameObject);
+            }
+        }
+
+        foreach(var cc in restingLine)
+        {
+            if (cc != null)
+            {
+                cc.isRunningLoop = false;
+                Destroy(cc.gameObject);
+            }
+        }
+
+        activeInLoop.Clear();
+        restingLine.Clear();
+
+        for(int i=0; i<3; i++)
+        {
+            while (queues[i].Count > 0)
+            {
+                CharacterController cc = queues[i].Dequeue();
+                if(cc != null)
+                {
+                    cc.isRunningLoop = false;
+                    Destroy(cc.gameObject);
+                }
+            }
+            queues[i].Clear();
         }
 
         GenerateSmartQueues();
@@ -57,7 +96,7 @@ public class QueueManager : MonoBehaviour
             if(totalCubes > 0)
             {
                 // Ensures minimum 10 shots, just in case a color spanwed very few cubes
-                int finalShots = Mathf.Max(10, totalCubes);
+                int finalShots = totalCubes;
                 charactersToSpawn.Add(new CharacterData(mat, finalShots));
             }
         }
@@ -113,6 +152,11 @@ public class QueueManager : MonoBehaviour
 
     private void Update()
     {
+        if(!UIManager.isGameActive)
+        {
+            return;
+        }
+
         // Detect mouse click
         if(Input.GetMouseButtonDown(0))
         {
@@ -191,6 +235,7 @@ public class QueueManager : MonoBehaviour
 
     private void UpdateRestingVisuals()
     {
+        restingLine.RemoveAll(item => item == null);
         for(int i=0; i<restingLine.Count; i++)
         {
             Vector3 targetPos = restingAreaStart.position + new Vector3(i * lineSpacing, 0, 0);
@@ -205,10 +250,12 @@ public class QueueManager : MonoBehaviour
         if(remainingCubes.Length == 0)
         {
             Debug.Log("YOU WIN! LEVEL COMPLETE");
+            uiManager.ShowVictoryPanel();
         }
         else if(restingLine.Count >= maxLoopLimit)
         {
             Debug.Log("GAME OVER!!");
+            uiManager.ShowGameOver();
         }
     }
 

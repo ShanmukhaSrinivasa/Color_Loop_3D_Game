@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 5879559032576986887}
   - component: {fileID: 4464405627037897430}
   - component: {fileID: 4525531239200313990}
+  - component: {fileID: -3752248909421553401}
   m_Layer: 0
   m_Name: TargetCube
   m_TagString: Untagged
@@ -112,3 +113,17 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 1, y: 1, z: 1}
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &-3752248909421553401
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 261296899193281494}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 44dcd806c0bea9440a80d7d1c40f9418, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CubeBehaviour
+  deathParticle: {fileID: 7549163044042174277, guid: f6e99d1d38342f14c968d3d09275fdc8, type: 3}
+  shrinkSpeed: 15

@@ -32,7 +32,7 @@ public class CharacterController : MonoBehaviour
         {
             MoveAlongPath();
 
-            if(Time.time >= nextFireTime && currentShots > 0)
+            if(isRunningLoop && Time.time >= nextFireTime && currentShots > 0)
             {
                 TryShoot();
             }
@@ -72,7 +72,6 @@ public class CharacterController : MonoBehaviour
 
         foreach(GameObject cube in allCubes)
         {
-            // 1.Check if the color matches
             // Calculate how far off-center the cube is on both axes
             float diffX = Mathf.Abs(cube.transform.position.x - transform.position.x);
             float diffY = Mathf.Abs(cube.transform.position.y - transform.position.y);
