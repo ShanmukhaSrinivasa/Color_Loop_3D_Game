@@ -8,11 +8,12 @@ public class QueueManager : MonoBehaviour
     [Header("Queue Settings")]
     [SerializeField] GameObject characterPrefab;
     [SerializeField] Transform[] queueStartPoints;
-    [SerializeField] float lineSpacing = 1.2f;
+    [SerializeField] float queueSpacing = 2.5f;
 
     [Header("Loop & Resting Rules")]
     public int maxLoopLimit = 5;
     public Transform restingAreaStart;
+    [SerializeField] float restingSpacing = 2f;
     public List<CharacterController> activeInLoop = new List<CharacterController>();
     public List<CharacterController> restingLine = new List<CharacterController>();
 
@@ -143,7 +144,7 @@ public class QueueManager : MonoBehaviour
         foreach(CharacterController cc in queues[lineIndex])
         {
             // Calculate position
-            Vector3 targetPos = queueStartPoints[lineIndex].position + new Vector3(0, -positionInLine * lineSpacing, 0);
+            Vector3 targetPos = queueStartPoints[lineIndex].position + new Vector3(0, -positionInLine * queueSpacing, 0);
 
             cc.transform.position = targetPos;
             positionInLine++;
@@ -238,7 +239,7 @@ public class QueueManager : MonoBehaviour
         restingLine.RemoveAll(item => item == null);
         for(int i=0; i<restingLine.Count; i++)
         {
-            Vector3 targetPos = restingAreaStart.position + new Vector3(i * lineSpacing, 0, 0);
+            Vector3 targetPos = restingAreaStart.position + new Vector3(i * restingSpacing, 0, 0);
             restingLine[i].transform.position = targetPos;
         }
     }

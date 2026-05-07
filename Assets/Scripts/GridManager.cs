@@ -6,7 +6,7 @@ public class GridManager : MonoBehaviour
     [Header("Grid Settings")]
     public int rows = 10;
     public int columns = 10;
-    [SerializeField] private float spacing = 1.1f; // Gap between the 1x1 cubes
+    [SerializeField] private float spacing = 1.4f; // Gap between the 1x1 cubes
     [SerializeField] private GameObject targetCubePrefab;
 
     [Header("Dynamic Data (Assigned by Level Manager")]
