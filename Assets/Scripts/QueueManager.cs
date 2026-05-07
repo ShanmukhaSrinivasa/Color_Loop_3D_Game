@@ -1,7 +1,7 @@
-using NUnit.Framework;
+using System.Collections;
 using System.Collections.Generic;
+using Unity.VisualScripting;
 using UnityEngine;
-using UnityEngine.TextCore.Text;
 
 public class QueueManager : MonoBehaviour
 {
@@ -24,6 +24,9 @@ public class QueueManager : MonoBehaviour
 
     private Queue<CharacterController>[] queues;
 
+    [Header("Auto-Finish System")]
+    public bool isAutoFinishing = false;
+
     void Awake()
     {
         // initialize the 3 queues
@@ -37,16 +40,28 @@ public class QueueManager : MonoBehaviour
 
     public void ResetAndGenerateQueue()
     {
-        foreach(var cc in activeInLoop)
+        WipeAllCharacters();
+
+        isAutoFinishing = false;
+        Time.timeScale = 1f;
+
+        GenerateSmartQueues();
+
+        uiManager.UpdateConveyorLimit(0, maxLoopLimit);
+    }
+
+    public void WipeAllCharacters()
+    {
+        foreach (var cc in activeInLoop)
         {
-            if(cc != null)
+            if (cc != null)
             {
                 cc.isRunningLoop = false;
                 Destroy(cc.gameObject);
             }
         }
 
-        foreach(var cc in restingLine)
+        foreach (var cc in restingLine)
         {
             if (cc != null)
             {
@@ -58,12 +73,12 @@ public class QueueManager : MonoBehaviour
         activeInLoop.Clear();
         restingLine.Clear();
 
-        for(int i=0; i<3; i++)
+        for (int i = 0; i < 3; i++)
         {
             while (queues[i].Count > 0)
             {
                 CharacterController cc = queues[i].Dequeue();
-                if(cc != null)
+                if (cc != null)
                 {
                     cc.isRunningLoop = false;
                     Destroy(cc.gameObject);
@@ -71,8 +86,6 @@ public class QueueManager : MonoBehaviour
             }
             queues[i].Clear();
         }
-
-        GenerateSmartQueues();
     }
 
     void GenerateSmartQueues()
@@ -209,17 +222,23 @@ public class QueueManager : MonoBehaviour
             UpdateRestingVisuals();
             SendCharacter(cc);
         }
+
+        CheckForAutoFinish();
     }
 
     private void SendCharacter(CharacterController cc)
     {
         activeInLoop.Add(cc);
         cc.StartLoop(mainLoopNodes, this);
+
+        uiManager.UpdateConveyorLimit(activeInLoop.Count, maxLoopLimit);
     }
 
     public void CharacterFinishedlap(CharacterController cc)
     {
         activeInLoop.Remove(cc);
+
+        uiManager.UpdateConveyorLimit(activeInLoop.Count, maxLoopLimit);
 
         if(cc.currentShots > 0)
         {
@@ -232,6 +251,8 @@ public class QueueManager : MonoBehaviour
         }
 
         CheckWinLoseConditions();
+
+        CheckForAutoFinish();
     }
 
     private void UpdateRestingVisuals()
@@ -260,6 +281,78 @@ public class QueueManager : MonoBehaviour
         }
     }
 
+    public void CheckForAutoFinish()
+    {
+        // If we are already finishing, or if the level is over do nothing.
+        if (isAutoFinishing || !UIManager.isGameActive)
+        {
+            return;
+        }
+
+        // 1. Count everyone left waiting in the 3 lines
+        int toalWaiting = queues[0].Count + queues[1].Count + queues[2].Count;
+
+        // 2. Count everyone in the game
+        int totalCharactersLeft = toalWaiting + activeInLoop.Count + restingLine.Count;
+
+        // 3. If there are characters waiting, And the total characters can fit in the 5 resting spots
+        if (totalCharactersLeft > 0 && totalCharactersLeft <= maxLoopLimit)
+        {
+            Debug.Log("<color=magenta>AUTO-FINISH TRIGGERED!</color>");
+            isAutoFinishing = true;
+
+            // FAST FORWARD TIME
+            Time.timeScale = 2.5f;
+
+            // Start Launching Characters Automatically
+            StartCoroutine(AutoDeployRoutine());
+        }
+    }
+
+    private IEnumerator AutoDeployRoutine()
+    {
+        while (isAutoFinishing && UIManager.isGameActive)
+        {
+            bool deployedSomeone = false;
+
+            // 1. Go through all 3 queues
+            for (int i = 0; i < 3; i++)
+            {
+                while (queues[i].Count > 0)
+                {
+                    // Grab the front character
+                    CharacterController cc = queues[i].Dequeue();
+                    UpdateLiveVisuals(i);
+
+                    // Send them to the loop
+                    SendCharacter(cc);
+
+                    deployedSomeone = true;
+
+                    // Wait a tiny fraction of second so they dont clip inside each other
+                    yield return new WaitForSeconds(1f);
+                }
+            }
+
+            // 2. Check if anyone is in the resting line
+            if (restingLine.Count > 0)
+            {
+                CharacterController cc = restingLine[0]; // grab the first one
+                restingLine.Remove(cc); // remove them from resting
+                SendCharacter(cc);
+                deployedSomeone = true;
+                yield return new WaitForSeconds(1f);
+            }
+
+            // 3. If nobody was in a line, it means everyone is currently running on the track!
+            // we just wait a tiny bit and check again.
+            if (!deployedSomeone)
+            {
+                yield return new WaitForSeconds(1f);
+            }
+        }
+    }
+
     private struct CharacterData
     {
         public Material color;
@@ -269,7 +362,5 @@ public class QueueManager : MonoBehaviour
             color = c;
             ammo = a;
         }
-
     }
-
 }

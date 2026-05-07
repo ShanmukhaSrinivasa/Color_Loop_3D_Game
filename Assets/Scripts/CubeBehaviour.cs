@@ -9,6 +9,11 @@ public class CubeBehaviour : MonoBehaviour
 
     public void ExplodAndDie()
     {
+        AudioManager.Instance.PlayPopSound();
+
+        CameraShake.Instance.ShakeCamera(0.1f, 0.15f);
+
+
         if(deathParticle != null)
         {
             ParticleSystem burst = Instantiate(deathParticle, transform.position, Quaternion.identity);

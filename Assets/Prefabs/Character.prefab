@@ -262,8 +262,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CharacterController
   moveSpeed: 3
+  entrySpeed: 20
   loopNodes: []
-  curentIndexNode: 0
+  currentIndexNode: 0
   isRunningLoop: 0
   bulletPrefab: {fileID: 7031934313696019483, guid: 154c95b849c557143b3d01102d9f5b68, type: 3}
   firePoint: {fileID: 5396214536057938492}

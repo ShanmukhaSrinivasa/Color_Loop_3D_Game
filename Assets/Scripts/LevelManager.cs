@@ -14,7 +14,7 @@ public class LevelManager : MonoBehaviour
 
     [Header("Level Data")]
     public List<levelConfig> levels;
-    private int currentLevelindex = 0;
+    public int currentLevelindex = 0;
 
     [Header("System References")]
     public GridManager gridManager;
@@ -52,11 +52,26 @@ public class LevelManager : MonoBehaviour
         gridManager.GenerateGrid();
 
         queueManager.ResetAndGenerateQueue();
+
+        uiManager.UpdateLevelText(currentLevelindex + 1);
+    }
+
+    public void LoadSpecificLevel(int index)
+    {
+        currentLevelindex = index;
+        LoadCurrentLevel();
     }
 
     public void NextLevel()
     {
         currentLevelindex++;
+
+        int highestUnlocked = PlayerPrefs.GetInt("UnlockedLevels", 0);
+        if(currentLevelindex > highestUnlocked)
+        {
+            PlayerPrefs.SetInt("UnlockedLevels", currentLevelindex);
+            PlayerPrefs.Save();
+        }
 
         if(currentLevelindex >= levels.Count)
         {
@@ -71,6 +86,16 @@ public class LevelManager : MonoBehaviour
     {
         LoadCurrentLevel();
         uiManager.StartGame();
+    }
+
+    public void ClearCurrentLevel()
+    {
+        foreach (Transform child in gridManager.transform)
+        {
+            Destroy(child.gameObject);
+        }
+
+        queueManager.WipeAllCharacters();
     }
 
 }
