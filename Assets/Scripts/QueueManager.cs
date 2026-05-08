@@ -58,11 +58,12 @@ public class QueueManager : MonoBehaviour
         isAutoFinishing = false;
         Time.timeScale = 1f;
 
+        maxLoopLimit = defaultLoopLimit;
+
         GenerateSmartQueues();
 
         uiManager.UpdateConveyorLimit(0, maxLoopLimit);
 
-        defaultLoopLimit = maxLoopLimit;
         shuffleUses = 1;
         expandLimitUses = 1;
     }
@@ -512,14 +513,29 @@ public class QueueManager : MonoBehaviour
     public void RemoveAmmoFromSystem(Material mat)
     {
         // 1. prioritize Characters running on the track
-        foreach (var cc in activeInLoop)
+        for (int i = activeInLoop.Count - 1; i >= 0; i--)
         {
+            var cc = activeInLoop[i];
             if (cc.myColor == mat && cc.currentShots > 0)
             {
                 cc.currentShots--;
                 if (cc.ammoText != null)
                 {
                     cc.ammoText.text = cc.currentShots.ToString();
+                }
+
+                // If the bomb took their very last bullet, remove them instantly!
+                if (cc.currentShots <= 0)
+                {
+                    cc.isRunningLoop = false; // Stop them in their tracks!
+
+                    if (AudioManager.Instance != null)
+                    {
+                        AudioManager.Instance.PlayPopSound();
+                    }
+
+                    // This perfectly handles removing them from the list, updating UI, and Destroying the object!
+                    CharacterFinishedlap(cc);
                 }
                 return;
             }

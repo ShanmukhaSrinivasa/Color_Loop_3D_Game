@@ -261,7 +261,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e6a88d3c9dcadba43b2bbf89db873681, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CharacterController
-  moveSpeed: 5
+  moveSpeed: 7
   entrySpeed: 20
   loopNodes: []
   currentIndexNode: 0
