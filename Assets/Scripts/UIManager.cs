@@ -1,3 +1,4 @@
+using System.Collections;
 using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -11,6 +12,11 @@ public class UIManager : MonoBehaviour
     public GameObject victoryPanel;
     public GameObject inGamePanel;
     public GameObject pausePanel;
+
+    [Header("Revive System")]
+    public GameObject revivePanel;
+    public TextMeshProUGUI reviveTimerText;
+    private Coroutine reviveCoroutine;
 
     public TextMeshProUGUI limitText;
     public TextMeshProUGUI levelText;
@@ -26,6 +32,7 @@ public class UIManager : MonoBehaviour
         victoryPanel.SetActive(false);
         pausePanel.SetActive(false);
         inGamePanel.SetActive(false);
+        revivePanel.SetActive(false);
         isGameActive = false;
 
         LevelManager.Instance.LoadCurrentLevel();
@@ -69,7 +76,7 @@ public class UIManager : MonoBehaviour
         isGameActive = false;
         victoryPanel.SetActive(true);
         inGamePanel.SetActive(false);
-        Time.timeScale = 1f;
+        Time.timeScale = 0f;
     }
 
     public void RestartLevel()
@@ -133,6 +140,57 @@ public class UIManager : MonoBehaviour
     public void QuitGame()
     {
         Application.Quit();
+    }
+
+    public void ShowRevivePanel()
+    {
+        isGameActive = false;
+        revivePanel.SetActive(true);
+        Time.timeScale = 0f;
+
+        if (reviveCoroutine != null)
+        {
+            StopCoroutine(reviveCoroutine);
+        }
+
+        reviveCoroutine = StartCoroutine(ReviveCountDown());
+    }
+
+    private IEnumerator ReviveCountDown()
+    {
+        int time = 5;
+        while (time > 0)
+        {
+            reviveTimerText.text = $"Watch Ad to Revive? ({time})";
+            yield return new WaitForSecondsRealtime(1f);
+            time--;
+        }
+
+        DeclineRevive();
+    }
+
+    public void AcceptRevive()
+    {
+        if (reviveCoroutine != null)
+        {
+            StopCoroutine(reviveCoroutine);
+        }
+        revivePanel.SetActive(false);
+        Time.timeScale = 1f;
+        isGameActive = true;
+
+        LevelManager.Instance.queueManager.ExecuteRevive();
+    }
+
+    public void DeclineRevive()
+    {
+        if (reviveCoroutine != null)
+        {
+            StopCoroutine(reviveCoroutine);
+        }
+
+        revivePanel.SetActive(false);
+        ShowGameOver();
     }
 
 }

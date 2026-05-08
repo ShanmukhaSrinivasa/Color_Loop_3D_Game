@@ -22,7 +22,7 @@ public class CharacterController : MonoBehaviour
     [SerializeField] float nextFireTime = 0f;
 
     [Header("Character Data")]
-    [SerializeField] Material myColor;
+    public Material myColor;
     public int currentShots = 10;
 
     [Header("UI References")]
@@ -30,6 +30,11 @@ public class CharacterController : MonoBehaviour
 
     void Update()
     {
+        if (!UIManager.isGameActive)
+        {
+            return;
+        }
+
         if(isRunningLoop && loopNodes.Count > 0)
         {
             MoveAlongPath();
@@ -76,6 +81,14 @@ public class CharacterController : MonoBehaviour
 
         foreach(GameObject cube in allCubes)
         {
+            CubeBehaviour cb = cube.GetComponent<CubeBehaviour>();
+
+            // ignore cubes that are already dead or shrinking
+            if (cb == null || cb.health <= 0)
+            {
+                continue;
+            }
+
             // Calculate how far off-center the cube is on both axes
             float diffX = Mathf.Abs(cube.transform.position.x - transform.position.x);
             float diffY = Mathf.Abs(cube.transform.position.y - transform.position.y);
@@ -104,15 +117,20 @@ public class CharacterController : MonoBehaviour
             }
         }
 
-        if (closestCube != null && closestCube.GetComponent<Renderer>().sharedMaterial == myColor)
+        if (closestCube != null)
         {
-            Shoot(closestCube.transform);
+            CubeBehaviour cb = closestCube.GetComponent<CubeBehaviour>();
+
+            if (cb.CanBeTarget() && cb.myColor == myColor)
+            {
+                Shoot(closestCube.transform);
+            }
         }
     }
 
     void Shoot(Transform target)
     {
-        target.gameObject.tag = "Untagged";
+        target.GetComponent<CubeBehaviour>().incomingDamage++;
         nextFireTime = Time.time + firerate;
         currentShots--; // reduce ammo
         UpdateAmmoText();
@@ -179,5 +197,25 @@ public class CharacterController : MonoBehaviour
         currentIndexNode = 0;
         
         isRunningLoop = true;
+    }
+
+    public void SetLockState(bool isLocked)
+    {
+        if (ammoText != null)
+        {
+            Color textColor = ammoText.color;
+
+            if (isLocked)
+            {
+                textColor.a = 0.3f;
+            }
+            else
+            {
+
+                textColor.a = 1.0f;
+            }
+
+            ammoText.color = textColor;
+        }
     }
 }

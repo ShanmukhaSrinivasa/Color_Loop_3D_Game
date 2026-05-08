@@ -53,4 +53,13 @@ public class LevelSelectMenu : MonoBehaviour
 
         uiManager.StartGame();
     }
+
+    // ------------ IMPOSSIBLE LEVEL TO TEST GAME MECHANICS ------------ 
+    public void loadQALevel()
+    {
+        int qaLevelIndex = LevelManager.Instance.levels.Count - 1;
+        LevelManager.Instance.LoadSpecificLevel(qaLevelIndex);
+        gameObject.SetActive(false);
+        uiManager.StartGame();
+    }
 }

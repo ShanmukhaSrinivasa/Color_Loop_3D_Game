@@ -41,7 +41,7 @@ public class Bullet : MonoBehaviour
 
             if(cubeScript != null)
             {
-                cubeScript.ExplodAndDie();
+                cubeScript.TakeDamage();
             }
             else
             {

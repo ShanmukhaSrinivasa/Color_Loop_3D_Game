@@ -41,30 +41,61 @@ public class GridManager : MonoBehaviour
             {
                 char tileChar = layout[y][x];
 
-                if(tileChar == '0')
+                if(tileChar == '0' || tileChar == ' ')
                 {
                     continue;
                 }
 
-                int colorIndex = (int)char.GetNumericValue(tileChar)-1;
+                CubeType spawnType = CubeType.Normal;
 
-                if(colorIndex >= 0 && colorIndex < availableColors.Length)
+                int colorIndex = -1;
+
+                if (tileChar >= '1' && tileChar <= '9')
                 {
-                    // Determing the spawn position
-                    Vector3 spawnPosition = new Vector3(startX + (x * spacing), startY + ((rows - y -1) * spacing), 0);
+                    colorIndex = tileChar - '1';
+                }
+                else if (tileChar >= 'A' && tileChar <= 'E')
+                {
+                    spawnType = CubeType.Armored;
+                    colorIndex = tileChar - 'A';
+                }
+                else if (tileChar == 'X')
+                {
+                    spawnType = CubeType.bomb;
+                }
 
-                    // Instantiate and organize
-                    GameObject newCube = Instantiate(targetCubePrefab, spawnPosition, Quaternion.identity);
-                    newCube.tag = "TargetCube";
-                    newCube.transform.parent = this.transform;
-                    newCube.name = $"Cube_{x}_{y}";
+                // Determing the spawn position
+                Vector3 spawnPosition = new Vector3(startX + (x * spacing), startY + ((rows - y -1) * spacing), 0);
+
+                // Instantiate and organize
+                GameObject newCube = Instantiate(targetCubePrefab, spawnPosition, Quaternion.identity);
+                newCube.transform.parent = this.transform;
+                newCube.name = $"Cube_{x}_{y}";
+                newCube.tag = "TargetCube";
+
+                CubeBehaviour cb = newCube.GetComponent<CubeBehaviour>();
+                Material chosenMat = null;
+
+                if (spawnType == CubeType.bomb)
+                {
+                    cb.Initialize(spawnType, null);
+                }
+                else if(colorIndex >= 0 && colorIndex < availableColors.Length)
+                {
 
                     // Assign a random color from the available colors
-                    Material chosenMat = availableColors[colorIndex];
+                    chosenMat = availableColors[colorIndex];
                     newCube.GetComponent<Renderer>().material = chosenMat;
+                    cb.Initialize(spawnType, chosenMat);
 
-                    // Update the color count in the dictionary
-                    colorCounts[chosenMat]++;
+                    if (spawnType == CubeType.Armored)
+                    {
+                        colorCounts[chosenMat] += 2;
+                    }
+                    else
+                    {
+                        colorCounts[chosenMat]+=1;
+                    }
                 }
             }
         }

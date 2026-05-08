@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq.Expressions;
 using Unity.VisualScripting;
 using UnityEngine;
 
@@ -12,6 +13,7 @@ public class QueueManager : MonoBehaviour
 
     [Header("Loop & Resting Rules")]
     public int maxLoopLimit = 5;
+    public int defaultLoopLimit;
     public Transform restingAreaStart;
     [SerializeField] float restingSpacing = 2f;
     public List<CharacterController> activeInLoop = new List<CharacterController>();
@@ -27,8 +29,18 @@ public class QueueManager : MonoBehaviour
     [Header("Auto-Finish System")]
     public bool isAutoFinishing = false;
 
+    [Header("Power Ups")]
+    public int shuffleUses = 1;
+    public int expandLimitUses = 1;
+
+    [Header("Input Settings")]
+    public float clickCooldown = 0.5f;
+    private float nextClickTime = 0f;
+
     void Awake()
     {
+        defaultLoopLimit = maxLoopLimit;
+
         // initialize the 3 queues
         queues = new Queue<CharacterController>[3];
 
@@ -36,6 +48,7 @@ public class QueueManager : MonoBehaviour
         {
             queues[i] = new Queue<CharacterController>();
         }
+
     }
 
     public void ResetAndGenerateQueue()
@@ -48,6 +61,10 @@ public class QueueManager : MonoBehaviour
         GenerateSmartQueues();
 
         uiManager.UpdateConveyorLimit(0, maxLoopLimit);
+
+        defaultLoopLimit = maxLoopLimit;
+        shuffleUses = 1;
+        expandLimitUses = 1;
     }
 
     public void WipeAllCharacters()
@@ -100,18 +117,13 @@ public class QueueManager : MonoBehaviour
             int totalCubes = kvp.Value;
 
             // Split the Total into characters wuth atleast 10 shots
-            while(totalCubes >= 20)
+            while(totalCubes > 0)
             {
-                charactersToSpawn.Add(new CharacterData(mat, 10));
-                totalCubes -= 10;
-            }
+                int shotsForThisChar = Mathf.Min(10, totalCubes);
 
-            // Give the remaining cubes to one last character
-            if(totalCubes > 0)
-            {
-                // Ensures minimum 10 shots, just in case a color spanwed very few cubes
-                int finalShots = totalCubes;
-                charactersToSpawn.Add(new CharacterData(mat, finalShots));
+                charactersToSpawn.Add(new CharacterData(mat, shotsForThisChar));
+
+                totalCubes -= shotsForThisChar;
             }
         }
 
@@ -160,19 +172,28 @@ public class QueueManager : MonoBehaviour
             Vector3 targetPos = queueStartPoints[lineIndex].position + new Vector3(0, -positionInLine * queueSpacing, 0);
 
             cc.transform.position = targetPos;
+
+            if (positionInLine == 0)
+            {
+                cc.SetLockState(false);
+            }
+            else
+            {
+                cc.SetLockState(true);
+            }
             positionInLine++;
         }
     }
 
     private void Update()
     {
-        if(!UIManager.isGameActive)
+        if(!UIManager.isGameActive || isAutoFinishing)
         {
             return;
         }
 
         // Detect mouse click
-        if(Input.GetMouseButtonDown(0))
+        if(Input.GetMouseButtonDown(0) && Time.time >= nextClickTime)
         {
             RaycastHit hit;
             Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
@@ -181,10 +202,13 @@ public class QueueManager : MonoBehaviour
             {
                 // Did we click a character
                 CharacterController clickedChar = hit.collider.GetComponent<CharacterController>();
+
                 if (clickedChar != null && !clickedChar.isRunningLoop)
                 {
                     if(activeInLoop.Count < maxLoopLimit)
                     {
+                        nextClickTime = Time.time + clickCooldown;
+
                         TrySendToLoop(clickedChar);
                     }
                     else
@@ -242,8 +266,30 @@ public class QueueManager : MonoBehaviour
 
         if(cc.currentShots > 0)
         {
-            restingLine.Add(cc);
-            UpdateRestingVisuals();
+            bool colorStillExists = false;
+
+            GameObject[] remainingCubes = GameObject.FindGameObjectsWithTag("TargetCube");
+
+            foreach (GameObject cube in remainingCubes)
+            {
+                CubeBehaviour cb = cube.GetComponent<CubeBehaviour>();
+
+                if (cb != null && cb.health > 0 && cb.myColor == cc.myColor)
+                {
+                    colorStillExists = true;
+                    break;
+                }
+            }
+
+            if (colorStillExists)
+            {
+                restingLine.Add(cc);
+                UpdateRestingVisuals();
+            }
+            else
+            {
+                Destroy(cc.gameObject);
+            } 
         }
         else
         {
@@ -265,7 +311,7 @@ public class QueueManager : MonoBehaviour
         }
     }
 
-    private void CheckWinLoseConditions()
+    public void CheckWinLoseConditions()
     {
         GameObject[] remainingCubes = GameObject.FindGameObjectsWithTag("TargetCube");
 
@@ -276,8 +322,8 @@ public class QueueManager : MonoBehaviour
         }
         else if(restingLine.Count >= maxLoopLimit)
         {
-            Debug.Log("GAME OVER!!");
-            uiManager.ShowGameOver();
+            Debug.Log("Resting Line Full! Triggered Revive..");
+            uiManager.ShowRevivePanel();
         }
     }
 
@@ -349,6 +395,174 @@ public class QueueManager : MonoBehaviour
             if (!deployedSomeone)
             {
                 yield return new WaitForSeconds(1f);
+            }
+        }
+    }
+
+    public void ExecuteRevive()
+    {
+        int refundQueueIndex = 0;
+        foreach (var cc in restingLine)
+        {
+            if (cc != null)
+            {
+                Material colorToRefund = cc.myColor;
+                int ammoToRefund = cc.currentShots;
+
+                SpawnCharacter(refundQueueIndex, colorToRefund, ammoToRefund);
+
+                refundQueueIndex++;
+
+                if (refundQueueIndex > 2)
+                {
+                    refundQueueIndex = 0;
+                }
+
+                if (AudioManager.Instance != null)
+                {
+                    AudioManager.Instance.PlayPopSound();
+                }
+
+                Destroy(cc.gameObject);
+            }
+        }
+
+        restingLine.Clear();
+        UpdateRestingVisuals();
+        uiManager.UpdateConveyorLimit(activeInLoop.Count, maxLoopLimit);
+    }
+
+    // ---------- POWER UP METHODS ----------
+
+    // 1. Shuffle Method
+    public void UseShufflePowerUp()
+    {
+        if (shuffleUses <= 0 || !UIManager.isGameActive || isAutoFinishing)
+        {
+            return;
+        }
+
+        shuffleUses--;
+
+        // 1. Gather all the characters waiting in the all 3 lines
+        List<CharacterController> allWaiting = new List<CharacterController>();
+        for (int i = 0; i < 3; i++)
+        {
+            while (queues[i].Count > 0)
+            {
+                allWaiting.Add(queues[i].Dequeue());
+            }
+        }
+
+        // 2. Perform a array shuffle
+        for (int i = 0; i < allWaiting.Count; i++)
+        {
+            CharacterController temp = allWaiting[i];
+            int randomIndex = Random.Range(i, allWaiting.Count);
+            allWaiting[i] = allWaiting[randomIndex];
+            allWaiting[randomIndex] = temp;
+        }
+
+        // 3. Redistribute the vidual layer and UI text locks to update immediately
+        int currentQueue = 0;
+        foreach (CharacterController cc in allWaiting)
+        {
+            queues[currentQueue].Enqueue(cc);
+
+            currentQueue++;
+            if (currentQueue > 2)
+            {
+                currentQueue = 0;
+            }
+        }
+
+        // 4. Force the visual layer and UX text locks to update immediately
+        for (int i = 0; i < 3; i++)
+        {
+            UpdateLiveVisuals(i);
+        }
+
+        // Add sound
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.PlayPopSound();
+        }
+    }
+
+    // 1. Expand Loop limit Powerup
+    public void UseExpandLimitPowerUp()
+    {
+        if (expandLimitUses <= 0 || !UIManager.isGameActive || isAutoFinishing)
+        {
+            return;
+        }
+
+        expandLimitUses--;
+
+        maxLoopLimit += 1;
+
+        uiManager.UpdateConveyorLimit(activeInLoop.Count, maxLoopLimit);
+
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.PlayPopSound();
+        }
+    }
+
+    public void RemoveAmmoFromSystem(Material mat)
+    {
+        // 1. prioritize Characters running on the track
+        foreach (var cc in activeInLoop)
+        {
+            if (cc.myColor == mat && cc.currentShots > 0)
+            {
+                cc.currentShots--;
+                if (cc.ammoText != null)
+                {
+                    cc.ammoText.text = cc.currentShots.ToString();
+                }
+                return;
+            }
+        }
+
+        // 2. Check in the rsting line
+
+        for (int i = restingLine.Count - 1; i >= 0; i--)
+        {
+            var cc = restingLine[i];
+
+            if (cc.myColor == mat && cc.currentShots > 0)
+            {
+                cc.currentShots--;
+                if (cc.ammoText != null)
+                {
+                    cc.ammoText.text = cc.currentShots.ToString();
+                }
+
+                if (cc.currentShots <= 0)
+                {
+                    restingLine.RemoveAt(i);
+                    Destroy(cc.gameObject);
+                    UpdateRestingVisuals();
+                }
+                return;
+            }
+        }
+
+        // 3. Finally, check the waiting queues
+        for (int i = 0; i < 3; i++)
+        {
+            foreach (var cc in queues[i])
+            {
+                if (cc.myColor == mat && cc.currentShots > 0)
+                {
+                    cc.currentShots--;
+                    if (cc.ammoText != null)
+                    {
+                        cc.ammoText.text = cc.currentShots.ToString();
+                    }
+                    return;
+                }
             }
         }
     }
