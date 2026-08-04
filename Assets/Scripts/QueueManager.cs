@@ -269,13 +269,14 @@ public class QueueManager : MonoBehaviour
         {
             bool colorStillExists = false;
 
-            GameObject[] remainingCubes = GameObject.FindGameObjectsWithTag("TargetCube");
-
-            foreach (GameObject cube in remainingCubes)
+            foreach (CubeBehaviour cube in CubeRegistry.Instance.ActiveCubes)
             {
-                CubeBehaviour cb = cube.GetComponent<CubeBehaviour>();
+                if (cube == null )
+                {
+                    continue;
+                }
 
-                if (cb != null && cb.health > 0 && cb.myColor == cc.myColor)
+                if(cube.health > 0 && cube.myColor == cc.myColor)
                 {
                     colorStillExists = true;
                     break;
@@ -314,16 +315,30 @@ public class QueueManager : MonoBehaviour
 
     public void CheckWinLoseConditions()
     {
-        GameObject[] remainingCubes = GameObject.FindGameObjectsWithTag("TargetCube");
+        bool hasAliveCube = false;
 
-        if(remainingCubes.Length == 0)
+        foreach(CubeBehaviour cube in CubeRegistry.Instance.ActiveCubes)
         {
-            Debug.Log("YOU WIN! LEVEL COMPLETE");
+            if(cube == null)
+            {
+                continue;
+            }
+
+            if(cube.health > 0)
+            {
+                hasAliveCube = true;
+                break;
+            }
+        }
+
+        if(!hasAliveCube)
+        {
+            Debug.Log("You win! Level Complete");
             uiManager.ShowVictoryPanel();
         }
         else if(restingLine.Count >= maxLoopLimit)
         {
-            Debug.Log("Resting Line Full! Triggered Revive..");
+            Debug.Log("Resting line Full! Triggered Revive");
             uiManager.ShowRevivePanel();
         }
     }

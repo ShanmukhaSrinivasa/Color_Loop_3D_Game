@@ -73,18 +73,15 @@ public class CharacterController : MonoBehaviour
     void TryShoot()
     {
         // Find all active cubes in the Scene
-        GameObject[] allCubes = GameObject.FindGameObjectsWithTag("TargetCube");
-        GameObject closestCube = null;
+        CubeBehaviour closestCube = null;
 
         float closestDistance = float.MaxValue;
         float alignmentThreshold = 0.6f;
 
-        foreach(GameObject cube in allCubes)
+        foreach(CubeBehaviour cube in CubeRegistry.Instance.ActiveCubes)
         {
-            CubeBehaviour cb = cube.GetComponent<CubeBehaviour>();
-
             // ignore cubes that are already dead or shrinking
-            if (cb == null || cb.health <= 0)
+            if (cube == null || cube.health <= 0)
             {
                 continue;
             }
@@ -119,9 +116,7 @@ public class CharacterController : MonoBehaviour
 
         if (closestCube != null)
         {
-            CubeBehaviour cb = closestCube.GetComponent<CubeBehaviour>();
-
-            if (cb.CanBeTarget() && cb.myColor == myColor)
+            if(closestCube.CanBeTarget() && closestCube.myColor == myColor)
             {
                 Shoot(closestCube.transform);
             }

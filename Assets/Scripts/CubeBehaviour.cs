@@ -17,6 +17,15 @@ public class CubeBehaviour : MonoBehaviour
     public ParticleSystem deathParticle;
     public float shrinkSpeed = 15f;
 
+    private void OnEnable()
+    {
+        CubeRegistry.Instance?.Register(this);
+    }
+
+    private void OnDestroy()
+    {
+        CubeRegistry.Instance?.Unregister(this);
+    }
     public void Initialize(CubeType cubeType, Material mat)
     {
         type = cubeType;
