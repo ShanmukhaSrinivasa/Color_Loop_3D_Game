@@ -147,6 +147,7 @@ GameObject:
   - component: {fileID: 1890346735478291440}
   - component: {fileID: 453776847015368624}
   - component: {fileID: 4296638818155654503}
+  - component: {fileID: 6614326715775888321}
   m_Layer: 0
   m_Name: Character
   m_TagString: Untagged
@@ -258,19 +259,15 @@ MonoBehaviour:
   m_GameObject: {fileID: 6949713238680623668}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e6a88d3c9dcadba43b2bbf89db873681, type: 3}
+  m_Script: {fileID: 11500000, guid: cc48f02d7ad6fa847bbfeaac5f64a16c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CharacterController
-  moveSpeed: 7
+  moveSpeed: 5
   entrySpeed: 20
   loopNodes: []
   currentIndexNode: 0
   isRunningLoop: 0
-  bulletPrefab: {fileID: 7031934313696019483, guid: 154c95b849c557143b3d01102d9f5b68, type: 3}
-  firePoint: {fileID: 5396214536057938492}
-  firerate: 0.5
-  nextFireTime: 0
-  myColor: {fileID: 2100000, guid: d86c019660eb55346b178f557fca884a, type: 2}
+  myColor: {fileID: 0}
   currentShots: 10
   ammoText: {fileID: 4635157955593173320}
 --- !u!65 &4296638818155654503
@@ -294,6 +291,21 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 1, y: 1, z: 1}
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &6614326715775888321
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6949713238680623668}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 945838134d4926d4ab7e9856128f7192, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CharacterShooter
+  bulletPrefab: {fileID: 7031934313696019483, guid: 154c95b849c557143b3d01102d9f5b68, type: 3}
+  firePoint: {fileID: 5396214536057938492}
+  firerate: 0.5
 --- !u!1 &8953100683302526807
 GameObject:
   m_ObjectHideFlags: 0

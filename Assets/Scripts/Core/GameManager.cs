@@ -2,15 +2,12 @@ using UnityEngine;
 
 public class GameManager : MonoBehaviour
 {
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
-    {
-        
-    }
+    [Header("Object Pools")]
+    [SerializeField] private GameObject bulletPrefab;
+    [SerializeField] private int bulletPoolSzie = 20;
 
-    // Update is called once per frame
-    void Update()
+    void Awake()
     {
-        
+        ObjectPoolManager.Instance.CreatePool(bulletPrefab, bulletPoolSzie);
     }
 }

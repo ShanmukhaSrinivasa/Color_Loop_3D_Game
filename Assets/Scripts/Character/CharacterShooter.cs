@@ -92,7 +92,10 @@ public class CharacterShooter : MonoBehaviour
         owner.ConsumeAmmo();
 
         // Spawn bullet
-        GameObject newBullet = Instantiate(bulletPrefab, firePoint.position, Quaternion.identity);
+        GameObject newBullet = ObjectPoolManager.Instance.GetObject(bulletPrefab);
+
+        newBullet.transform.SetPositionAndRotation(firePoint.position, firePoint.rotation);
+
         newBullet.GetComponent<Bullet>().Initialize(target.transform, owner.myColor);
 
         if(owner.currentShots <= 0)

@@ -6,18 +6,29 @@ public class Bullet : MonoBehaviour
     [SerializeField] private Transform targetCube;
     [SerializeField] Material bulletColor;
 
+    private Renderer meshRenderer;
+    private TrailRenderer trailRenderer;
+    private PooledObject pooledObject;
+
+    private void Awake()
+    {
+        meshRenderer = GetComponent<Renderer>();
+        trailRenderer = GetComponent<TrailRenderer>();
+        pooledObject = GetComponent<PooledObject>();
+    }
+
     // The character will call this to launch the bullet
     public void Initialize(Transform target, Material color)
     {
         targetCube = target;
         bulletColor = color;
-        GetComponent<Renderer>().material = bulletColor;
+        meshRenderer.material = bulletColor;
 
-        TrailRenderer trail = GetComponent<TrailRenderer>();
-        if(trail != null)
+        if(trailRenderer != null)
         {
-            trail.startColor = bulletColor.color;
-            trail.endColor = new Color(bulletColor.color.r, bulletColor.color.g, bulletColor.color.b, 0f);
+            trailRenderer.Clear();
+            trailRenderer.startColor = bulletColor.color;
+            trailRenderer.endColor = new Color(bulletColor.color.r, bulletColor.color.g, bulletColor.color.b, 0f);
         }
     }
 
@@ -28,7 +39,7 @@ public class Bullet : MonoBehaviour
         // If the target was destroyed by another bullet, destroy this one to prevent errors
         if(targetCube == null)
         {
-            Destroy(gameObject);
+            ReturnBullet();
             return;
         }
 
@@ -48,8 +59,24 @@ public class Bullet : MonoBehaviour
                 Destroy(targetCube.gameObject);
             }
 
-            Destroy(gameObject);
+            ReturnBullet();
+        }
+    }
+
+    private void ReturnBullet()
+    {
+        targetCube = null;
+
+        if(trailRenderer != null)
+        {
+            trailRenderer.Clear();
         }
 
+        if(pooledObject == null)
+        {
+            pooledObject = GetComponent<PooledObject>();
+        }
+
+        pooledObject.ReturnToPool();
     }
 }
