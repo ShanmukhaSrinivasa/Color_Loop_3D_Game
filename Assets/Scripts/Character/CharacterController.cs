@@ -7,6 +7,7 @@ using System.Collections;
 public class CharacterController : MonoBehaviour
 {
     private QueueManager myManager;
+    private CharacterShooter shooter;
 
     [Header("Movement Settings")]
     [SerializeField] private float moveSpeed = 3f;
@@ -15,12 +16,6 @@ public class CharacterController : MonoBehaviour
     [SerializeField] private int currentIndexNode = 0;
     public bool isRunningLoop = false;
 
-    [Header("Shooting Systems")]
-    [SerializeField] GameObject bulletPrefab;
-    [SerializeField] Transform firePoint;
-    [SerializeField] float firerate = 0.5f;
-    [SerializeField] float nextFireTime = 0f;
-
     [Header("Character Data")]
     public Material myColor;
     public int currentShots = 10;
@@ -28,6 +23,16 @@ public class CharacterController : MonoBehaviour
     [Header("UI References")]
     [SerializeField] public TextMeshProUGUI ammoText;
 
+    private Renderer meshRenderer;
+
+    private void Awake()
+    {
+        meshRenderer = GetComponent<Renderer>();
+
+        shooter = GetComponent<CharacterShooter>();
+
+        shooter.Initialize(this);
+    }
     void Update()
     {
         if (!UIManager.isGameActive)
@@ -39,11 +44,23 @@ public class CharacterController : MonoBehaviour
         {
             MoveAlongPath();
 
-            if(isRunningLoop && currentIndexNode > 0 && Time.time >= nextFireTime && currentShots > 0)
+            if(isRunningLoop && currentIndexNode > 0)
             {
-                TryShoot();
+                shooter.UpdateShooter();
             }
         }
+    }
+
+    public void ConsumeAmmo()
+    {
+        currentShots--;
+        UpdateAmmoText();
+    }
+
+    public void FinishLap()
+    {
+        isRunningLoop = false;
+        myManager.CharacterFinishedlap(this);
     }
 
     void MoveAlongPath()
@@ -64,80 +81,8 @@ public class CharacterController : MonoBehaviour
             // If we reach the end of the list, loop back to the start
             if(currentIndexNode >= loopNodes.Count)
             {
-                isRunningLoop = false;
-                myManager.CharacterFinishedlap(this);
+                FinishLap();
             }
-        }
-    }
-
-    void TryShoot()
-    {
-        // Find all active cubes in the Scene
-        CubeBehaviour closestCube = null;
-
-        float closestDistance = float.MaxValue;
-        float alignmentThreshold = 0.6f;
-
-        foreach(CubeBehaviour cube in CubeRegistry.Instance.ActiveCubes)
-        {
-            // ignore cubes that are already dead or shrinking
-            if (cube == null || cube.health <= 0)
-            {
-                continue;
-            }
-
-            // Calculate how far off-center the cube is on both axes
-            float diffX = Mathf.Abs(cube.transform.position.x - transform.position.x);
-            float diffY = Mathf.Abs(cube.transform.position.y - transform.position.y);
-
-            bool isAligned = false;
-            float distanceToCube = 0f;
-
-            // 2. is it in the same column
-            if(diffX < alignmentThreshold)
-            {
-                isAligned = true;
-                distanceToCube = diffY;
-            }
-            // 3. Or is it in the same Row?
-            else if(diffY < alignmentThreshold)
-            {
-                isAligned = true;
-                distanceToCube = diffX;
-            }
-
-            // 4. If aligned, is it the closest one we've found so far?
-            if(isAligned && distanceToCube < closestDistance)
-            {
-                closestDistance = distanceToCube;
-                closestCube = cube;
-            }
-        }
-
-        if (closestCube != null)
-        {
-            if(closestCube.CanBeTarget() && closestCube.myColor == myColor)
-            {
-                Shoot(closestCube.transform);
-            }
-        }
-    }
-
-    void Shoot(Transform target)
-    {
-        target.GetComponent<CubeBehaviour>().incomingDamage++;
-        nextFireTime = Time.time + firerate;
-        currentShots--; // reduce ammo
-        UpdateAmmoText();
-
-        // Spawn bullet
-        GameObject newBullet = Instantiate(bulletPrefab, firePoint.position, Quaternion.identity);
-        newBullet.GetComponent<Bullet>().Initialize(target, myColor);
-
-        if(currentShots <= 0)
-        {
-            isRunningLoop = false;
-            myManager.CharacterFinishedlap(this);
         }
     }
 
@@ -147,7 +92,7 @@ public class CharacterController : MonoBehaviour
         currentShots = shots;
 
         // Update Material to match the assigned color
-        GetComponent<Renderer>().material = myColor;
+        meshRenderer.material = myColor;
 
         UpdateAmmoText();
 
@@ -177,7 +122,7 @@ public class CharacterController : MonoBehaviour
         transform.localScale = targetScale; // Ensure it ends perfectly at original scale
     }
 
-    private void UpdateAmmoText()
+    public void UpdateAmmoText()
     {
         if(ammoText != null)
         {
